@@ -54,7 +54,7 @@ struct Post{
 }
 
 /// 命令行中的 k=v 使用 parse_kv_pair 解析成 KvPair struct
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct KvPair {
     k: String,
     v: String,
@@ -98,8 +98,7 @@ async fn post(client: Client,args: &Post) -> Result<()> {
     }
 
     let resp = client.post(&args.url).json(&body).send().await?;
-    println!("{:?}", resp.text().await?);
-    Ok(())
+    Ok(print_resp(resp).await?)
 }
 
 // 打印服务器版本号和状态码
@@ -172,3 +171,35 @@ fn print_syntect(s: &str, ext: &str) {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_url_works() {
+        assert!(parse_url("abc").is_err());
+        assert!(parse_url("http://abc.xyz").is_ok());
+        assert!(parse_url("https://httpbin.org/post").is_ok());
+    }
+
+    #[test]
+    fn parse_kv_pair_works() {
+        assert!(parse_kv_pair("a").is_err());
+        assert_eq!(
+            parse_kv_pair("a=1").unwrap(),
+            KvPair {
+                k: "a".into(),
+                v: "1".into()
+            }
+        );
+
+        assert_eq!(
+            parse_kv_pair("b=").unwrap(),
+            KvPair {
+                k: "b".into(),
+                v: "".into()
+            }
+        );
+
+    }
+}
